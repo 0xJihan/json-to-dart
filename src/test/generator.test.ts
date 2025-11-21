@@ -17,7 +17,8 @@ suite('DartClassGenerator Test Suite', () => {
         assert.ok(code.includes('String? name;'));
         assert.ok(code.includes('int? age;'));
         assert.ok(code.includes('User.fromJson(Map<String, dynamic> json)'));
-        assert.ok(code.includes("name = json['name'];"));
+        // Updated expectation: using named constructor arguments
+        assert.ok(code.includes("name: json['name']"));
     });
 
     test('Generate JSON Serializable Model', () => {
@@ -83,7 +84,7 @@ suite('DartClassGenerator Test Suite', () => {
         const json = JSON.stringify({ name: 'test' });
         const code = generator.generate(json, 'User');
 
-        assert.ok(code.includes('String name;')); // No ?
+        assert.ok(code.includes('final String name;')); // Should be final now
         assert.ok(!code.includes('String? name;'));
     });
     test('Naming Convention - snake_case', () => {

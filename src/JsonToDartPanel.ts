@@ -132,7 +132,7 @@ export class JsonToDartPanel {
       </head>
       <body>
         <div class="container">
-            <h1>JSON to Dart <small style="font-size: 0.5em; color: #888;">by Jihan</small></h1>
+            <h1>JSON to Dart</h1>
 
             <div class="section">
                 <label for="class-name">Root Class Name</label>
@@ -140,18 +140,21 @@ export class JsonToDartPanel {
             </div>
 
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label for="json-input">JSON Data</label>
-                    <button id="advanced-btn" class="secondary-btn">Advanced Settings</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="json-input" style="margin-bottom: 0;">JSON Data</label>
+                    <button id="advanced-btn" class="secondary-btn">Settings</button>
                 </div>
                 <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
             </div>
 
+            <div class="controls">
+                <button id="generate-btn">Generate Dart Code</button>
+            </div>
 
             <div id="advanced-modal" class="modal hidden">
                 <div class="modal-content">
                     <span class="close-btn">&times;</span>
-                    <h2>Advanced Settings</h2>
+                    <h2 style="margin-top: 0;">Advanced Settings</h2>
                     
                     <div class="section">
                         <h3>Serialization Strategy</h3>
@@ -169,8 +172,11 @@ export class JsonToDartPanel {
                                 Custom Annotations
                             </label>
                         </div>
+                        <!-- Merged into logic, but kept UI for clarity if user wants explicit control, 
+                             though plan said to merge. We can hide it or keep it. 
+                             Let's keep it but auto-check it if json_serializable is picked in logic. -->
                         <div class="checkbox-group" style="margin-top: 10px;">
-                            <label><input type="checkbox" id="use-json-annotation"> Use json_annotation</label>
+                            <label><input type="checkbox" id="use-json-annotation"> Add @JsonSerializable annotation (if not using json_serializable)</label>
                         </div>
                     </div>
 
@@ -220,13 +226,8 @@ export class JsonToDartPanel {
                 </div>
             </div>
 
-            <div class="controls">
-                <button id="generate-btn" disabled>Generate</button>
-            </div>
-
             <div class="footer">
-                <p>Developed by <strong>Jihan</strong></p>
-                <p><a href="https://github.com/0xJihan">github.com/0xJihan</a></p>
+                <p>Developed by <a href="https://github.com/0xJihan">0xJihan</a></p>
             </div>
         </div>
         <script>

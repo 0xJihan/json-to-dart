@@ -30,7 +30,7 @@ You can install the extension directly from the **Visual Studio Code Marketplace
 1. **Open VS Code**
 2. Open the **Extensions View** (`Ctrl+Shift+X`)
 3. Search for:
-   - **JSON to Dart**
+   - **json to dart plugin**
    - or **0xJihan.json-to-dart-plugin**
 4. Click **Install**
 5. Reload VS Code if prompted
