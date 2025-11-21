@@ -1,47 +1,44 @@
- # JSON to Dart Plugin
+# JSON to Dart VS Code Extension
 
-Convert JSON data into Dart model classes instantly. Supports `json_serializable`, manual serialization, and custom annotations.
+Generate Dart data classes from JSON effortlessly. This extension is designed for Flutter and Dart developers who want a fast, customizable, and beautiful tool for model generation.
 
 ## Features
 
-- **Instant Conversion**: Paste JSON and get Dart code.
-- **Multiple Strategies**:
-  - `json_serializable` (with `@JsonSerializable`, `fromJson`, `toJson`)
-  - Manual serialization (simple `fromJson`, `toJson`)
-  - Custom annotations
-- **Type Safety**: Auto-detection of types, with options for nullable/non-nullable fields.
-- **Default Values**: Option to initialize fields with default values.
+- **✨ Beautiful & User-Friendly UI**: A clean, modern interface that fits right into VS Code.
+- **🚀 Multiple Serialization Strategies**:
+  - **JSON Serializable**: Generates code compatible with `json_serializable` and `build_runner`.
+  - **Manual**: Generates standard Dart classes with `fromJson` and `toJson` methods.
+  - **Custom**: Define your own annotation formats and imports.
+- **⚙️ Advanced Customization**:
+  - **Type Detection**: Choose between Auto-detect, Nullable, or Non-nullable types.
+  - **Default Values**: Initialize fields with null, non-null defaults, or leave them uninitialized.
+- **💾 Persistent Settings**: Your preferences are saved automatically, so you don't have to reconfigure them every time.
+- **🔌 Custom Annotations**: Full control over class and property annotations for advanced use cases.
 
-## How to Use Locally
+## Installation
 
-1.  **Open the Project**: Open this folder in VS Code.
-2.  **Install Dependencies**: Run `npm install` in the terminal.
-3.  **Run the Extension**:
-    - Press `F5` (or go to **Run and Debug** > **Run Extension**).
-    - A new VS Code window ("Extension Development Host") will open.
-4.  **Use the Command**:
-    - In the new window, press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac).
-    - Type `JSON to Dart: Generate Class` and select it.
-    - The extension panel will open. Paste your JSON and click **Generate Dart Code**.
+1.  Download the `.vsix` file from the [Releases](https://github.com/0xJihan/json-to-dart/releases) page.
+2.  Open VS Code.
+3.  Go to Extensions view (`Ctrl+Shift+X`).
+4.  Click on the "..." menu and select "Install from VSIX...".
+5.  Select the downloaded file.
 
-## How to Distribute (GitHub)
+## Usage
 
-To share this extension on GitHub so others can download and use it:
+1.  Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`).
+2.  Run **"JSON to Dart: Generate Class"**.
+3.  Paste your JSON into the input area.
+4.  Select your desired settings (Serialization, Types, Defaults).
+5.  Click **Generate Dart Code**.
 
-1.  **Initialize Git**:
-    ```bash
-    git init
-    git add .
-    git commit -m "Initial commit"
-    ```
-2.  **Push to GitHub**: Create a new repository on GitHub and follow the instructions to push your code.
-3.  **Package for Installation** (Optional but recommended):
-    - Install `vsce`: `npm install -g @vscode/vsce`
-    - Package the extension: `vsce package`
-    - This creates a `.vsix` file (e.g., `json-to-dart-plugin-0.0.1.vsix`).
-    - You can upload this `.vsix` file to your GitHub Releases.
-    - Users can install it by going to **Extensions** > **...** > **Install from VSIX...**.
+## Why Choose This Extension?
 
-## Requirements
+Unlike other JSON to Dart converters, this tool prioritizes **user experience** and **flexibility**. It doesn't just dump code; it gives you control over how that code is generated. Whether you strictly follow `json_serializable` or have a custom architecture, this plugin adapts to your workflow. Plus, it remembers your choices, saving you valuable time.
 
-- VS Code 1.80.0 or higher
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request or open an issue on [GitHub](https://github.com/0xJihan/json-to-dart).
+
+## License
+
+MIT

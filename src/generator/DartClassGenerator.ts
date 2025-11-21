@@ -81,7 +81,7 @@ export class DartClassGenerator {
     private generateDartCode(classes: ClassDefinition[], rootClassName: string): string {
         let code = '';
 
-        // Imports
+
         if (this.settings.serialization === 'json_serializable' || this.settings.useJsonAnnotation) {
             code += "import 'package:json_annotation/json_annotation.dart';\n\n";
         }
@@ -104,7 +104,7 @@ export class DartClassGenerator {
     private generateClass(cls: ClassDefinition): string {
         let code = '';
 
-        // Class Annotation
+
         if (this.settings.serialization === 'json_serializable') {
             code += '@JsonSerializable()\n';
         } else if (this.settings.serialization === 'custom' && this.settings.customSettings?.classAnnotation) {
@@ -113,12 +113,12 @@ export class DartClassGenerator {
 
         code += `class ${cls.name} {\n`;
 
-        // Fields
+
         for (const field of cls.fields) {
             const defaultValue = this.getDefaultValueLiteral(field.type);
             const hasDefault = this.settings.defaultValue === 'non-null' && defaultValue !== 'null';
 
-            // Property Annotation
+
             if (this.settings.serialization === 'json_serializable') {
                 if (hasDefault) {
                     code += `  @JsonKey(defaultValue: ${defaultValue})\n`;
@@ -134,7 +134,7 @@ export class DartClassGenerator {
 
         code += '\n';
 
-        // Constructor
+
         code += `  ${cls.name}({`;
         code += cls.fields.map(f => {
             const defaultValue = this.getDefaultValueLiteral(f.type);
@@ -149,7 +149,7 @@ export class DartClassGenerator {
         }).join(', ');
         code += '});\n\n';
 
-        // FromJson / ToJson
+
         if (this.settings.serialization === 'json_serializable') {
             code += `  factory ${cls.name}.fromJson(Map<String, dynamic> json) => _$${cls.name}FromJson(json);\n`;
             code += `  Map<String, dynamic> toJson() => _$${cls.name}ToJson(this);\n`;

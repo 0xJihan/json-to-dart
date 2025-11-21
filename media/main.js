@@ -1,6 +1,6 @@
 const vscode = acquireVsCodeApi();
 
-// Handle Custom Options Visibility
+
 const customOptions = document.getElementById('custom-options');
 const radios = document.getElementsByName('serialization');
 
