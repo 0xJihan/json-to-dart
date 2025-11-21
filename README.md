@@ -17,26 +17,46 @@ Generate Dart data classes from JSON effortlessly. This extension is designed fo
 
 ## Installation
 
-<div align="center">
-  <a href="https://github.com/0xJihan/json-to-dart/releases/latest/download/json-to-dart-plugin-0.0.1.vsix">
-    <img src="https://img.shields.io/badge/Download-.vsix-blue?style=for-the-badge&logo=visual-studio-code" alt="Download Extension" />
+You can install the extension directly from the **Visual Studio Code Marketplace**:
+
+<div>
+  <a href="https://marketplace.visualstudio.com/items?itemName=0xJihan.json-to-dart-plugin">
+    <img src="https://img.shields.io/badge/Install%20from-VS%20Code%20Marketplace-blue?style=for-the-badge&logo=visual-studio-code" alt="Install from VS Code Marketplace" />
   </a>
 </div>
 
-1.  **Download**: Click the button above to download the `json-to-dart-plugin-0.0.1.vsix` file.
-2.  **Open VS Code**.
-3.  **Extensions View**: Go to the Extensions view (`Ctrl+Shift+X`).
-4.  **Install from VSIX**: Click on the "..." (Views and More Actions) menu at the top right of the Extensions view and select **"Install from VSIX..."**.
-5.  **Select File**: Choose the downloaded `.vsix` file.
-6.  **Reload**: Reload VS Code if prompted.
+### Install via VS Code (Recommended)
+
+1. **Open VS Code**
+2. Open the **Extensions View** (`Ctrl+Shift+X`)
+3. Search for:
+   - **JSON to Dart**
+   - or **0xJihan.json-to-dart-plugin**
+4. Click **Install**
+5. Reload VS Code if prompted
+
+### Install via Marketplace Website
+
+1. Visit:  
+   https://marketplace.visualstudio.com/items?itemName=0xJihan.json-to-dart-plugin
+2. Click **Install**
+3. VS Code will open automatically and install the extension
 
 ## Usage
 
-1.  Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`).
-2.  Run **"JSON to Dart: Generate Class"**.
-3.  Paste your JSON into the input area.
-4.  Select your desired settings (Serialization, Types, Defaults).
-5.  Click **Generate Dart Code**.
+### Context Menu
+1. Select and Right Click on Folder where you want to create the model class
+2. Select **"JSON to Dart: Generate Class"**
+3. Paste your JSON into the input area
+4. Select your desired settings (Serialization, Types, Defaults)
+5. Click **Generate Dart Code**
+
+### Command palette
+1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+2. Run **"JSON to Dart: Generate Class"**
+3. Paste your JSON into the input area
+4. Select your desired settings (Serialization, Types, Defaults)
+5. Click **Generate Dart Code**
 
 ## Why Choose This Extension?
 

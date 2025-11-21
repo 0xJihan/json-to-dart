@@ -2,6 +2,7 @@
   "name": "json-to-dart-plugin",
   "displayName": "JSON to Dart Plugin",
   "description": "Convert JSON to Dart model classes with customizable options.",
+  "publisher": "0xJihan",
   "icon": "img/logo.png",
   "repository": {
     "type": "git",
@@ -12,11 +13,21 @@
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Programming Languages"
   ],
-  "activationEvents": [
-    "onCommand:jsonToDart.start",
-    "onCommand:jsonToDart.generateFromContext"
+  "keywords": [
+    "json",
+    "dart",
+    "json to dart",
+    "converter",
+    "json dart",
+    "code generation",
+    "model generator",
+    "flutter",
+    "dart model",
+    "json parser",
+    "class generator"
   ],
   "main": "./out/extension.js",
   "contributes": {
