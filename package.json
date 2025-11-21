@@ -1,0 +1,96 @@
+{
+  "name": "json-to-dart-plugin",
+  "displayName": "JSON to Dart Plugin",
+  "description": "Convert JSON to Dart model classes with customizable options.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "jsonToDart.start",
+        "title": "JSON to Dart: Generate Class"
+      },
+      {
+        "command": "jsonToDart.generateFromContext",
+        "title": "Json to Dart: Generate Class"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "jsonToDart.generateFromContext",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "JSON to Dart",
+      "properties": {
+        "jsonToDart.namingConvention": {
+          "type": "string",
+          "enum": [
+            "camelCase",
+            "snake_case",
+            "PascalCase"
+          ],
+          "default": "camelCase",
+          "description": "Naming convention for class properties."
+        },
+        "jsonToDart.serialization": {
+          "type": "string",
+          "enum": [
+            "json_serializable",
+            "manual",
+            "none"
+          ],
+          "default": "json_serializable",
+          "description": "Serialization strategy to use."
+        },
+        "jsonToDart.generateNestedClasses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically generate separate classes for nested objects."
+        },
+        "jsonToDart.defaultValues": {
+          "type": "boolean",
+          "default": false,
+          "description": "Initialize properties with default values."
+        },
+        "jsonToDart.nullSafety": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use null safety (nullable types)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "mocha --ui tdd ./out/test/generator.test.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.2.5",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.3",
+    "@vscode/test-electron": "^2.3.2"
+  }
+}
