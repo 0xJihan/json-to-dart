@@ -14,7 +14,10 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:jsonToDart.start",
+    "onCommand:jsonToDart.generateFromContext"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
