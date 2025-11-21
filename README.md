@@ -17,11 +17,18 @@ Generate Dart data classes from JSON effortlessly. This extension is designed fo
 
 ## Installation
 
-1.  Download the `.vsix` file from the [Releases](https://github.com/0xJihan/json-to-dart/releases) page.
-2.  Open VS Code.
-3.  Go to Extensions view (`Ctrl+Shift+X`).
-4.  Click on the "..." menu and select "Install from VSIX...".
-5.  Select the downloaded file.
+<div align="center">
+  <a href="https://github.com/0xJihan/json-to-dart/releases/latest/download/json-to-dart-plugin-0.0.1.vsix">
+    <img src="https://img.shields.io/badge/Download-.vsix-blue?style=for-the-badge&logo=visual-studio-code" alt="Download Extension" />
+  </a>
+</div>
+
+1.  **Download**: Click the button above to download the `json-to-dart-plugin-0.0.1.vsix` file.
+2.  **Open VS Code**.
+3.  **Extensions View**: Go to the Extensions view (`Ctrl+Shift+X`).
+4.  **Install from VSIX**: Click on the "..." (Views and More Actions) menu at the top right of the Extensions view and select **"Install from VSIX..."**.
+5.  **Select File**: Choose the downloaded `.vsix` file.
+6.  **Reload**: Reload VS Code if prompted.
 
 ## Usage
 
