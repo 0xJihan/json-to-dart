@@ -26,7 +26,7 @@ export class DartClassGenerator {
         const fields: FieldDefinition[] = [];
         const allKeys = new Set<string>();
 
-        // Collect all keys from all samples
+
         for (const sample of samples) {
             if (sample && typeof sample === 'object') {
                 Object.keys(sample).forEach(key => allKeys.add(key));
@@ -88,7 +88,7 @@ export class DartClassGenerator {
         }
 
         if (isMixed) {
-            // Check if double/int mix (numbers)
+
             const allNumbers = values.every(v => typeof v === 'number');
             if (allNumbers) {
                 const hasDouble = values.some(v => !Number.isInteger(v));
@@ -105,7 +105,7 @@ export class DartClassGenerator {
         }
 
         if (Array.isArray(values[0])) {
-            // Flatten all arrays to find the inner type
+
             const allItems: any[] = [];
             for (const val of values) {
                 if (Array.isArray(val)) {
@@ -119,7 +119,7 @@ export class DartClassGenerator {
 
         if (firstType === 'object') {
             const className = this.capitalize(this.toCamelCase(key));
-            // Recurse with all object values for this key
+
             this.parseClass(values, className, classes);
             return className;
         }
@@ -130,7 +130,7 @@ export class DartClassGenerator {
     private isNullable(isMissing: boolean, hasNull: boolean): boolean {
         if (this.settings.typeSetting === 'nullable') return true;
         if (this.settings.typeSetting === 'non-nullable') return false;
-        // Auto
+
         return isMissing || hasNull;
     }
 
@@ -157,7 +157,7 @@ export class DartClassGenerator {
         const strategy = this.settings.serialization;
         let code = '';
 
-        // Standard Classes (Manual, JsonSerializable, Custom)
+
         if (strategy === 'json_serializable') {
             code += '@JsonSerializable()\n';
         } else if (strategy === 'custom' && this.settings.customSettings?.classAnnotation) {
@@ -166,13 +166,13 @@ export class DartClassGenerator {
 
         code += `class ${cls.name} {\n`;
 
-        // Fields
+
         for (const field of cls.fields) {
             if (strategy === 'json_serializable') {
                 if (field.jsonKey !== field.name || this.hasDefaultValue(field)) {
                     let annotation = `@JsonKey(name: '${field.jsonKey}'`;
                     if (this.hasDefaultValue(field)) {
-                        // For json_serializable, remove const from default value
+
                         annotation += `, defaultValue: ${this.getDefaultValueLiteral(field.type, false)}`;
                     }
                     annotation += ')';
@@ -182,21 +182,19 @@ export class DartClassGenerator {
                 code += `  ${this.settings.customSettings.propertyAnnotation.replace('%s', field.jsonKey)}\n`;
             }
 
-            const isFinal = true; // Always final
+            const isFinal = true;
             const typeStr = field.type + (field.isNullable ? '?' : '');
             code += `  ${isFinal ? 'final ' : ''}${typeStr} ${field.name};\n`;
         }
         code += '\n';
 
-        // Constructor
+
         code += `  ${cls.name}({`;
         code += cls.fields.map(f => {
-            // Manual strategy: use constructor defaults if enabled
-            // JsonSerializable: NO constructor defaults (use defaultValue in annotation)
-            // Custom: NO constructor defaults (assumed)
+
 
             const useConstructorDefault = strategy === 'manual' && this.settings.defaultValue === 'non-null';
-            // For manual constructor defaults, we can keep const if appropriate (user said "not from manual")
+
             const defaultValue = this.getDefaultValueLiteral(f.type, true);
             const hasDefault = useConstructorDefault && defaultValue !== 'null';
 
@@ -209,7 +207,6 @@ export class DartClassGenerator {
         }).join(', ');
         code += '});\n\n';
 
-        // Serialization Methods
         if (strategy === 'json_serializable') {
             code += `  factory ${cls.name}.fromJson(Map<String, dynamic> json) => _$${cls.name}FromJson(json);\n`;
             code += `  Map<String, dynamic> toJson() => _$${cls.name}ToJson(this);\n`;
@@ -243,14 +240,14 @@ export class DartClassGenerator {
                     valueExpr += ` ?? []`;
                 }
             } else if (!['String', 'int', 'double', 'bool', 'dynamic'].includes(f.type)) {
-                // Object
+
                 if (f.isNullable) {
                     valueExpr = `${valueExpr} == null ? null : ${f.type}.fromJson(${valueExpr} as Map<String, dynamic>)`;
                 } else {
                     valueExpr = `${f.type}.fromJson(${valueExpr} as Map<String, dynamic>)`;
                 }
             } else {
-                // Primitive
+
                 if (f.type === 'double') {
                     valueExpr = `(${valueExpr} as num?)?.toDouble()`;
                 } else if (f.type === 'int') {
@@ -282,7 +279,7 @@ export class DartClassGenerator {
         code += `    return <String, dynamic>{\n`;
 
         for (const f of cls.fields) {
-            // Remove 'this.' prefix as requested
+
             let val = `${f.name}`;
             if (f.type.startsWith('List<')) {
                 const innerType = f.type.substring(5, f.type.length - 1);
@@ -309,7 +306,7 @@ export class DartClassGenerator {
     }
 
     private hasDefaultValue(field: FieldDefinition): boolean {
-        // Only for json_serializable strategy we use this to check if we should add defaultValue
+
         return this.settings.defaultValue === 'non-null' && !field.isNullable;
     }
 
