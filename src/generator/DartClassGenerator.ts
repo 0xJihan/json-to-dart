@@ -7,20 +7,52 @@ export class DartClassGenerator {
         try {
             const json = JSON.parse(jsonString);
             const classes: ClassDefinition[] = [];
-            this.parseObject(json, rootClassName, classes);
+
+            let samples: any[] = [];
+            if (Array.isArray(json)) {
+                samples = json;
+            } else {
+                samples = [json];
+            }
+
+            this.parseClass(samples, rootClassName, classes);
             return this.generateDartCode(classes, rootClassName);
         } catch (e) {
-            throw new Error('Invalid JSON');
+            throw new Error('Invalid JSON: ' + (e as Error).message);
         }
     }
 
-    private parseObject(obj: any, className: string, classes: ClassDefinition[]) {
+    private parseClass(samples: any[], className: string, classes: ClassDefinition[]) {
         const fields: FieldDefinition[] = [];
+        const allKeys = new Set<string>();
 
-        for (const key in obj) {
-            const value = obj[key];
-            const type = this.getType(value, key, classes);
-            const isNullable = this.isNullable(key);
+        // Collect all keys from all samples
+        for (const sample of samples) {
+            if (sample && typeof sample === 'object') {
+                Object.keys(sample).forEach(key => allKeys.add(key));
+            }
+        }
+
+        for (const key of allKeys) {
+            const values: any[] = [];
+            let isMissingInSome = false;
+            let hasNull = false;
+
+            for (const sample of samples) {
+                if (sample && typeof sample === 'object' && key in sample) {
+                    const val = sample[key];
+                    if (val === null) {
+                        hasNull = true;
+                    } else {
+                        values.push(val);
+                    }
+                } else {
+                    isMissingInSome = true;
+                }
+            }
+
+            const isNullable = this.isNullable(isMissingInSome, hasNull);
+            const type = this.getType(values, key, classes);
 
             fields.push({
                 name: this.formatName(key),
@@ -40,59 +72,76 @@ export class DartClassGenerator {
         });
     }
 
-    private getType(value: any, key: string, classes: ClassDefinition[]): string {
-        if (value === null) {
+    private getType(values: any[], key: string, classes: ClassDefinition[]): string {
+        if (values.length === 0) {
             return 'dynamic';
         }
-        if (typeof value === 'string') {
-            return 'String';
-        }
-        if (typeof value === 'number') {
-            return Number.isInteger(value) ? 'int' : 'double';
-        }
-        if (typeof value === 'boolean') {
-            return 'bool';
-        }
-        if (Array.isArray(value)) {
-            if (value.length === 0) {
-                return 'List<dynamic>';
+
+        const firstType = typeof values[0];
+        let isMixed = false;
+
+        for (let i = 1; i < values.length; i++) {
+            if (typeof values[i] !== firstType) {
+                isMixed = true;
+                break;
             }
-            const innerType = this.getType(value[0], key, classes);
+        }
+
+        if (isMixed) {
+            // Check if double/int mix (numbers)
+            const allNumbers = values.every(v => typeof v === 'number');
+            if (allNumbers) {
+                const hasDouble = values.some(v => !Number.isInteger(v));
+                return hasDouble ? 'double' : 'int';
+            }
+            return 'dynamic';
+        }
+
+        if (firstType === 'string') return 'String';
+        if (firstType === 'boolean') return 'bool';
+        if (firstType === 'number') {
+            const hasDouble = values.some(v => !Number.isInteger(v));
+            return hasDouble ? 'double' : 'int';
+        }
+
+        if (Array.isArray(values[0])) {
+            // Flatten all arrays to find the inner type
+            const allItems: any[] = [];
+            for (const val of values) {
+                if (Array.isArray(val)) {
+                    allItems.push(...val);
+                }
+            }
+            if (allItems.length === 0) return 'List<dynamic>';
+            const innerType = this.getType(allItems, key, classes);
             return `List<${innerType}>`;
         }
-        if (typeof value === 'object') {
+
+        if (firstType === 'object') {
             const className = this.capitalize(this.toCamelCase(key));
-            this.parseObject(value, className, classes);
+            // Recurse with all object values for this key
+            this.parseClass(values, className, classes);
             return className;
         }
+
         return 'dynamic';
     }
 
-    private isNullable(key: string): boolean {
-        if (this.settings.typeSetting === 'nullable') {
-            return true;
-        }
-        if (this.settings.typeSetting === 'non-nullable') {
-            return false;
-        }
-        return true; // Default to nullable for auto
+    private isNullable(isMissing: boolean, hasNull: boolean): boolean {
+        if (this.settings.typeSetting === 'nullable') return true;
+        if (this.settings.typeSetting === 'non-nullable') return false;
+        // Auto
+        return isMissing || hasNull;
     }
 
     private generateDartCode(classes: ClassDefinition[], rootClassName: string): string {
         let code = '';
+        const strategy = this.settings.serialization;
 
-        // Merge json_serializable and useJsonAnnotation logic
-        const isJsonSerializable = this.settings.serialization === 'json_serializable';
-        const useAnnotation = isJsonSerializable || this.settings.useJsonAnnotation;
-
-        if (useAnnotation) {
+        if (strategy === 'json_serializable') {
             code += "import 'package:json_annotation/json_annotation.dart';\n\n";
-        }
-
-        if (isJsonSerializable) {
-            const partName = this.toSnakeCase(rootClassName);
-            code += `part '${partName}.g.dart';\n\n`;
-        } else if (this.settings.serialization === 'custom' && this.settings.customSettings?.import) {
+            code += `part '${this.toSnakeCase(rootClassName)}.g.dart';\n\n`;
+        } else if (strategy === 'custom' && this.settings.customSettings?.import) {
             code += `${this.settings.customSettings.import}\n\n`;
         }
 
@@ -105,165 +154,172 @@ export class DartClassGenerator {
     }
 
     private generateClass(cls: ClassDefinition): string {
+        const strategy = this.settings.serialization;
         let code = '';
-        const isJsonSerializable = this.settings.serialization === 'json_serializable';
 
-        if (isJsonSerializable) {
+        // Standard Classes (Manual, JsonSerializable, Custom)
+        if (strategy === 'json_serializable') {
             code += '@JsonSerializable()\n';
-        } else if (this.settings.serialization === 'custom' && this.settings.customSettings?.classAnnotation) {
+        } else if (strategy === 'custom' && this.settings.customSettings?.classAnnotation) {
             code += `${this.settings.customSettings.classAnnotation}\n`;
         }
 
         code += `class ${cls.name} {\n`;
 
+        // Fields
         for (const field of cls.fields) {
-            const defaultValue = this.getDefaultValueLiteral(field.type);
-            const hasDefault = this.settings.defaultValue === 'non-null' && defaultValue !== 'null';
-
-
-            const isNullable = field.isNullable && !hasDefault;
-
-            if (isJsonSerializable) {
-                if (hasDefault) {
-                    code += `  @JsonKey(defaultValue: ${defaultValue})\n`;
+            if (strategy === 'json_serializable') {
+                if (field.jsonKey !== field.name || this.hasDefaultValue(field)) {
+                    let annotation = `@JsonKey(name: '${field.jsonKey}'`;
+                    if (this.hasDefaultValue(field)) {
+                        // For json_serializable, remove const from default value
+                        annotation += `, defaultValue: ${this.getDefaultValueLiteral(field.type, false)}`;
+                    }
+                    annotation += ')';
+                    code += `  ${annotation}\n`;
                 }
-            } else if (this.settings.serialization === 'custom' && this.settings.customSettings?.propertyAnnotation) {
+            } else if (strategy === 'custom' && this.settings.customSettings?.propertyAnnotation) {
                 code += `  ${this.settings.customSettings.propertyAnnotation.replace('%s', field.jsonKey)}\n`;
             }
 
-            const isFinal = true;
-            const typeStr = field.type + (isNullable ? '?' : '');
+            const isFinal = true; // Always final
+            const typeStr = field.type + (field.isNullable ? '?' : '');
             code += `  ${isFinal ? 'final ' : ''}${typeStr} ${field.name};\n`;
         }
-
         code += '\n';
 
         // Constructor
         code += `  ${cls.name}({`;
         code += cls.fields.map(f => {
-            const defaultValue = this.getDefaultValueLiteral(f.type);
-            const hasDefault = this.settings.defaultValue === 'non-null' && defaultValue !== 'null';
-            const isNullable = f.isNullable && !hasDefault;
+            // Manual strategy: use constructor defaults if enabled
+            // JsonSerializable: NO constructor defaults (use defaultValue in annotation)
+            // Custom: NO constructor defaults (assumed)
+
+            const useConstructorDefault = strategy === 'manual' && this.settings.defaultValue === 'non-null';
+            // For manual constructor defaults, we can keep const if appropriate (user said "not from manual")
+            const defaultValue = this.getDefaultValueLiteral(f.type, true);
+            const hasDefault = useConstructorDefault && defaultValue !== 'null';
 
             if (hasDefault) {
                 return `this.${f.name} = ${defaultValue}`;
             } else {
-                const required = !isNullable ? 'required ' : '';
+                const required = !f.isNullable ? 'required ' : '';
                 return `${required}this.${f.name}`;
             }
         }).join(', ');
         code += '});\n\n';
 
-        if (isJsonSerializable) {
+        // Serialization Methods
+        if (strategy === 'json_serializable') {
             code += `  factory ${cls.name}.fromJson(Map<String, dynamic> json) => _$${cls.name}FromJson(json);\n`;
             code += `  Map<String, dynamic> toJson() => _$${cls.name}ToJson(this);\n`;
-        } else if (this.settings.serialization === 'manual') {
-            // Manual fromJson with initializer list for final fields
-            code += `  factory ${cls.name}.fromJson(Map<String, dynamic> json) {\n`;
-            code += `    return ${cls.name}(\n`;
-            code += cls.fields.map(f => {
-                let valueExpression = `json['${f.jsonKey}']`;
-
-                // Handle List mapping
-                if (f.type.startsWith('List<')) {
-                    const innerType = f.type.substring(5, f.type.length - 1);
-                    if (innerType !== 'dynamic' && innerType !== 'String' && innerType !== 'int' && innerType !== 'double' && innerType !== 'bool') {
-                        // List of objects
-                        valueExpression = `(json['${f.jsonKey}'] as List<dynamic>?)?.map((e) => ${innerType}.fromJson(e as Map<String, dynamic>)).toList() ?? []`;
-                    } else {
-                        // List of primitives
-                        // If it's a list of primitives, we might need to cast
-                        if (f.isNullable) {
-                            valueExpression = `(json['${f.jsonKey}'] as List<dynamic>?)?.map((e) => e as ${innerType}).toList()`;
-                        } else {
-                            valueExpression = `(json['${f.jsonKey}'] as List<dynamic>?)?.map((e) => e as ${innerType}).toList() ?? []`;
-                        }
-                    }
-                } else if (f.type !== 'dynamic' && f.type !== 'String' && f.type !== 'int' && f.type !== 'double' && f.type !== 'bool') {
-                    // Complex object
-                    if (f.isNullable) {
-                        valueExpression = `json['${f.jsonKey}'] == null ? null : ${f.type}.fromJson(json['${f.jsonKey}'] as Map<String, dynamic>)`;
-                    } else {
-                        // If non-nullable but complex, we need to decide how to handle null json. 
-                        // Usually throw or use default if possible. For now, assume json is valid or throw.
-                        valueExpression = `${f.type}.fromJson(json['${f.jsonKey}'] as Map<String, dynamic>)`;
-                    }
-                } else {
-                    // Primitive
-                    if (f.type === 'double') {
-                        valueExpression = `(json['${f.jsonKey}'] as num?)?.toDouble()`;
-                        if (!f.isNullable && this.settings.defaultValue === 'non-null') {
-                            valueExpression += ` ?? 0.0`;
-                        }
-                    } else if (f.type === 'int') {
-                        valueExpression = `(json['${f.jsonKey}'] as num?)?.toInt()`;
-                        if (!f.isNullable && this.settings.defaultValue === 'non-null') {
-                            valueExpression += ` ?? 0`;
-                        }
-                    } else if (f.type === 'String') {
-                        valueExpression = `json['${f.jsonKey}'] as String?`;
-                        if (!f.isNullable && this.settings.defaultValue === 'non-null') {
-                            valueExpression += ` ?? ''`;
-                        }
-                    } else if (f.type === 'bool') {
-                        valueExpression = `json['${f.jsonKey}'] as bool?`;
-                        if (!f.isNullable && this.settings.defaultValue === 'non-null') {
-                            valueExpression += ` ?? false`;
-                        }
-                    }
-                }
-
-                return `      ${f.name}: ${valueExpression},`;
-            }).join('\n');
-            code += `\n    );\n`;
-            code += `  }\n\n`;
-
-            // Manual toJson
-            code += `  Map<String, dynamic> toJson() {\n`;
-            code += `    final Map<String, dynamic> data = <String, dynamic>{};\n`;
-            for (const field of cls.fields) {
-                let valueExpression = `this.${field.name}`;
-                if (field.type.startsWith('List<')) {
-                    const innerType = field.type.substring(5, field.type.length - 1);
-                    if (innerType !== 'dynamic' && innerType !== 'String' && innerType !== 'int' && innerType !== 'double' && innerType !== 'bool') {
-                        // List of objects
-                        if (field.isNullable) {
-                            valueExpression = `this.${field.name}?.map((e) => e.toJson()).toList()`;
-                        } else {
-                            valueExpression = `this.${field.name}.map((e) => e.toJson()).toList()`;
-                        }
-                    }
-                } else if (field.type !== 'dynamic' && field.type !== 'String' && field.type !== 'int' && field.type !== 'double' && field.type !== 'bool') {
-                    // Complex object
-                    if (field.isNullable) {
-                        valueExpression = `this.${field.name}?.toJson()`;
-                    } else {
-                        valueExpression = `this.${field.name}.toJson()`;
-                    }
-                }
-                code += `    data['${field.jsonKey}'] = ${valueExpression};\n`;
-            }
-            code += `    return data;\n`;
-            code += `  }\n`;
+        } else if (strategy === 'manual') {
+            code += this.generateManualFromJson(cls);
+            code += this.generateManualToJson(cls);
         }
 
         code += '}\n';
         return code;
     }
 
-    private getDefaultValueLiteral(type: string): string {
-        switch (type) {
-            case 'String': return "''";
-            case 'int': return '0';
-            case 'double': return '0.0';
-            case 'bool': return 'false';
-            case 'List<dynamic>': return 'const []';
-            default:
-                if (type.startsWith('List<')) {
-                    return 'const []';
+    private generateManualFromJson(cls: ClassDefinition): string {
+        let code = `  factory ${cls.name}.fromJson(Map<String, dynamic> json) {\n`;
+        code += `    return ${cls.name}(\n`;
+
+        for (const f of cls.fields) {
+            let valueExpr = `json['${f.jsonKey}']`;
+
+            if (f.type.startsWith('List<')) {
+                const innerType = f.type.substring(5, f.type.length - 1);
+                const isPrimitive = ['String', 'int', 'double', 'bool', 'dynamic'].includes(innerType);
+
+                if (isPrimitive) {
+                    valueExpr = `(${valueExpr} as List<dynamic>?)?.map((e) => e as ${innerType}).toList()`;
+                } else {
+                    valueExpr = `(${valueExpr} as List<dynamic>?)?.map((e) => ${innerType}.fromJson(e as Map<String, dynamic>)).toList()`;
                 }
-                return 'null';
+
+                if (!f.isNullable) {
+                    valueExpr += ` ?? []`;
+                }
+            } else if (!['String', 'int', 'double', 'bool', 'dynamic'].includes(f.type)) {
+                // Object
+                if (f.isNullable) {
+                    valueExpr = `${valueExpr} == null ? null : ${f.type}.fromJson(${valueExpr} as Map<String, dynamic>)`;
+                } else {
+                    valueExpr = `${f.type}.fromJson(${valueExpr} as Map<String, dynamic>)`;
+                }
+            } else {
+                // Primitive
+                if (f.type === 'double') {
+                    valueExpr = `(${valueExpr} as num?)?.toDouble()`;
+                } else if (f.type === 'int') {
+                    valueExpr = `(${valueExpr} as num?)?.toInt()`;
+                } else {
+                    valueExpr = `${valueExpr} as ${f.type}?`;
+                }
+
+                if (!f.isNullable && this.settings.defaultValue === 'non-null') {
+                    valueExpr += ` ?? ${this.getDefaultValueLiteral(f.type, true)}`;
+                } else if (!f.isNullable) {
+                    if (f.type === 'double') valueExpr += ' ?? 0.0';
+                    else if (f.type === 'int') valueExpr += ' ?? 0';
+                    else if (f.type === 'bool') valueExpr += ' ?? false';
+                    else if (f.type === 'String') valueExpr += " ?? ''";
+                }
+            }
+
+            code += `      ${f.name}: ${valueExpr},\n`;
         }
+
+        code += `    );\n`;
+        code += `  }\n\n`;
+        return code;
+    }
+
+    private generateManualToJson(cls: ClassDefinition): string {
+        let code = `  Map<String, dynamic> toJson() {\n`;
+        code += `    return <String, dynamic>{\n`;
+
+        for (const f of cls.fields) {
+            // Remove 'this.' prefix as requested
+            let val = `${f.name}`;
+            if (f.type.startsWith('List<')) {
+                const innerType = f.type.substring(5, f.type.length - 1);
+                if (!['String', 'int', 'double', 'bool', 'dynamic'].includes(innerType)) {
+                    if (f.isNullable) {
+                        val = `${val}?.map((e) => e.toJson()).toList()`;
+                    } else {
+                        val = `${val}.map((e) => e.toJson()).toList()`;
+                    }
+                }
+            } else if (!['String', 'int', 'double', 'bool', 'dynamic'].includes(f.type)) {
+                if (f.isNullable) {
+                    val = `${val}?.toJson()`;
+                } else {
+                    val = `${val}.toJson()`;
+                }
+            }
+            code += `      '${f.jsonKey}': ${val},\n`;
+        }
+
+        code += `    };\n`;
+        code += `  }\n`;
+        return code;
+    }
+
+    private hasDefaultValue(field: FieldDefinition): boolean {
+        // Only for json_serializable strategy we use this to check if we should add defaultValue
+        return this.settings.defaultValue === 'non-null' && !field.isNullable;
+    }
+
+    private getDefaultValueLiteral(type: string, useConst: boolean): string {
+        if (type.startsWith('List<')) return useConst ? 'const []' : '[]';
+        if (type === 'String') return "''";
+        if (type === 'int') return '0';
+        if (type === 'double') return '0.0';
+        if (type === 'bool') return 'false';
+        return 'null';
     }
 
     private toCamelCase(str: string): string {

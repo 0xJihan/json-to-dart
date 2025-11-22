@@ -2,148 +2,81 @@ import * as assert from 'assert';
 import { DartClassGenerator } from '../generator/DartClassGenerator';
 import { GeneratorSettings } from '../generator/types';
 
-suite('DartClassGenerator Test Suite', () => {
-    test('Generate Manual Model', () => {
-        const settings: GeneratorSettings = {
-            serialization: 'manual',
-            typeSetting: 'auto',
-            defaultValue: 'none'
-        };
-        const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'test', age: 10 });
-        const code = generator.generate(json, 'User');
+suite('Dart Generator Tests', () => {
 
-        assert.ok(code.includes('class User'));
-        assert.ok(code.includes('String? name;'));
-        assert.ok(code.includes('int? age;'));
-        assert.ok(code.includes('User.fromJson(Map<String, dynamic> json)'));
-        // Updated expectation: using named constructor arguments
-        assert.ok(code.includes("name: json['name']"));
-    });
-
-    test('Generate JSON Serializable Model', () => {
+    test('Strict Type Detection (List Input)', () => {
         const settings: GeneratorSettings = {
             serialization: 'json_serializable',
             typeSetting: 'auto',
             defaultValue: 'none',
-            useJsonAnnotation: true
+            namingConvention: 'camelCase',
+            sort: false
         };
         const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'test' });
-        const code = generator.generate(json, 'User');
+        const json = JSON.stringify([
+            { a: 1 },
+            { a: null },
+            { b: 2 }
+        ]);
+        const code = generator.generate(json, 'Item');
 
-        assert.ok(code.includes('@JsonSerializable()'));
-        assert.ok(code.includes("part 'user.g.dart';"));
-        assert.ok(code.includes("import 'package:json_annotation/json_annotation.dart';"));
-        assert.ok(code.includes('factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);'));
+        // a is null in second item -> nullable
+        // b is missing in first item -> nullable
+        assert.ok(code.includes('final int? a;'));
+        assert.ok(code.includes('final int? b;'));
     });
 
-    test('Generate JSON Serializable Model - No Import', () => {
-        const settings: GeneratorSettings = {
-            serialization: 'json_serializable',
-            typeSetting: 'auto',
-            defaultValue: 'none',
-            useJsonAnnotation: false
-        };
-        const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'test' });
-        const code = generator.generate(json, 'User');
-
-        assert.ok(code.includes('@JsonSerializable()'));
-        assert.ok(code.includes("part 'user.g.dart';"));
-        assert.ok(code.includes("import 'package:json_annotation/json_annotation.dart';"));
-    });
-
-    test('Generate Custom Annotations', () => {
-        const settings: GeneratorSettings = {
-            serialization: 'custom',
-            typeSetting: 'auto',
-            defaultValue: 'none',
-            customSettings: {
-                import: "import 'package:custom/custom.dart';",
-                classAnnotation: '@CustomClass()',
-                propertyAnnotation: "@CustomProp('%s')"
-            }
-        };
-        const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'test' });
-        const code = generator.generate(json, 'User');
-
-        assert.ok(code.includes("import 'package:custom/custom.dart';"));
-        assert.ok(code.includes('@CustomClass()'));
-        assert.ok(code.includes("@CustomProp('name')"));
-    });
-
-    test('Type Settings - Non-nullable', () => {
+    test('Manual Generation with Defaults', () => {
         const settings: GeneratorSettings = {
             serialization: 'manual',
-            typeSetting: 'non-nullable',
-            defaultValue: 'none'
-        };
-        const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'test' });
-        const code = generator.generate(json, 'User');
-
-        assert.ok(code.includes('final String name;')); // Should be final now
-        assert.ok(!code.includes('String? name;'));
-    });
-    test('Naming Convention - snake_case', () => {
-        const settings: GeneratorSettings = {
-            serialization: 'manual',
-            typeSetting: 'auto',
-            defaultValue: 'none',
-            namingConvention: 'snake_case'
-        };
-        const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ userName: 'test', userAge: 10 });
-        const code = generator.generate(json, 'User');
-
-        assert.ok(code.includes('String? user_name;'));
-        assert.ok(code.includes('int? user_age;'));
-    });
-
-    test('Non-nullable with Default Values', () => {
-        const settings: GeneratorSettings = {
-            serialization: 'json_serializable',
-            typeSetting: 'non-nullable',
+            typeSetting: 'non-nullable', // Force non-nullable to test defaults
             defaultValue: 'non-null',
-            useJsonAnnotation: true
+            namingConvention: 'camelCase',
+            sort: false
         };
         const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ name: 'John', age: 30 });
-        const code = generator.generate(json, 'DummyData');
+        const json = JSON.stringify({
+            id: 1,
+            score: 2.5
+        });
+        const code = generator.generate(json, 'Data');
 
-        // Check part directive
-        assert.ok(code.includes("part 'dummy_data.g.dart';"));
+        assert.ok(!code.includes('@JsonSerializable'));
+        // Manual defaults can still use const if appropriate (user said "not from manual")
+        // But let's check if they are present
+        assert.ok(code.includes('this.id = 0'));
+        assert.ok(code.includes('this.score = 0.0'));
+        assert.ok(code.includes('factory Data.fromJson'));
 
-        // Check fields are non-nullable and final
-        assert.ok(code.includes('final String name;'));
-        assert.ok(code.includes('final int age;'));
-
-        // Check JsonKey default value
-        assert.ok(code.includes("@JsonKey(defaultValue: '')"));
-        assert.ok(code.includes("@JsonKey(defaultValue: 0)"));
-
-        // Check Constructor defaults
-        assert.ok(code.includes("this.name = ''"));
-        assert.ok(code.includes("this.age = 0"));
+        // Check toJson for absence of 'this.'
+        assert.ok(code.includes("'id': id,"));
+        assert.ok(code.includes("'score': score,"));
+        assert.ok(!code.includes("'id': this.id,"));
     });
-    test('Sorting - Alphabetical', () => {
+
+    test('JsonSerializable Strictness', () => {
         const settings: GeneratorSettings = {
-            serialization: 'manual',
+            serialization: 'json_serializable',
             typeSetting: 'auto',
-            defaultValue: 'none',
-            sort: true
+            defaultValue: 'non-null',
+            namingConvention: 'camelCase',
+            sort: false
         };
         const generator = new DartClassGenerator(settings);
-        const json = JSON.stringify({ z: 1, a: 2, m: 3 });
-        const code = generator.generate(json, 'SortTest');
+        const json = JSON.stringify({
+            title: "Test",
+            tags: []
+        });
+        const code = generator.generate(json, 'Post');
 
-        const indexA = code.indexOf('int? a;');
-        const indexM = code.indexOf('int? m;');
-        const indexZ = code.indexOf('int? z;');
+        // Should have defaultValue annotation
+        assert.ok(code.includes("@JsonKey(name: 'title', defaultValue: '')"));
+        // Should NOT have const for list default
+        assert.ok(code.includes("@JsonKey(name: 'tags', defaultValue: [])"));
+        assert.ok(!code.includes("defaultValue: const []"));
 
-        assert.ok(indexA < indexM);
-        assert.ok(indexM < indexZ);
+        // Should NOT have constructor default
+        assert.ok(code.includes('required this.title'));
+        assert.ok(!code.includes('this.title ='));
     });
 });

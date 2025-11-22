@@ -51,9 +51,7 @@ if (initialSettings) {
     if (initialSettings.sort) {
         document.getElementById('sort-properties').checked = true;
     }
-    if (initialSettings.useJsonAnnotation) {
-        document.getElementById('use-json-annotation').checked = true;
-    }
+
     if (initialSettings.customSettings) {
         document.getElementById('import-stmt').value = initialSettings.customSettings.import || '';
         document.getElementById('class-annotation').value = initialSettings.customSettings.classAnnotation || '';
@@ -139,7 +137,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     const defaultValue = document.querySelector('input[name="default-value"]:checked').value;
     const namingConvention = document.querySelector('input[name="naming-convention"]:checked').value;
     const sort = document.getElementById('sort-properties').checked;
-    const useJsonAnnotation = document.getElementById('use-json-annotation').checked;
+
 
     const customSettings = {
         import: document.getElementById('import-stmt').value,
@@ -160,7 +158,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
             defaultValue,
             namingConvention,
             sort,
-            useJsonAnnotation,
+
             customSettings
         }
     });

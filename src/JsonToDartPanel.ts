@@ -58,7 +58,6 @@ export class JsonToDartPanel {
                                 defaultValue: message.data.defaultValue,
                                 namingConvention: message.data.namingConvention,
                                 sort: message.data.sort,
-                                useJsonAnnotation: message.data.useJsonAnnotation,
                                 customSettings: message.data.customSettings
                             };
 
@@ -71,6 +70,24 @@ export class JsonToDartPanel {
                             if (this._initialPath) {
                                 const fileName = this._toSnakeCase(message.data.className || 'generated_class') + '.dart';
                                 const filePath = vscode.Uri.file(path.join(this._initialPath, fileName));
+
+                                // Check if file exists
+                                try {
+                                    await vscode.workspace.fs.stat(filePath);
+                                    // File exists, ask for confirmation
+                                    const answer = await vscode.window.showWarningMessage(
+                                        `File ${fileName} already exists. Do you want to overwrite it?`,
+                                        'Overwrite',
+                                        'Cancel'
+                                    );
+
+                                    if (answer !== 'Overwrite') {
+                                        return;
+                                    }
+                                } catch {
+                                    // File does not exist, proceed
+                                }
+
                                 const encoder = new TextEncoder();
                                 await vscode.workspace.fs.writeFile(filePath, encoder.encode(code));
                                 vscode.window.showInformationMessage(`Generated ${fileName}`);
@@ -163,6 +180,7 @@ export class JsonToDartPanel {
                                 <input type="radio" name="serialization" value="json_serializable" checked>
                                 json_serializable
                             </label>
+
                             <label>
                                 <input type="radio" name="serialization" value="manual">
                                 Manual Model Creation
@@ -172,12 +190,7 @@ export class JsonToDartPanel {
                                 Custom Annotations
                             </label>
                         </div>
-                        <!-- Merged into logic, but kept UI for clarity if user wants explicit control, 
-                             though plan said to merge. We can hide it or keep it. 
-                             Let's keep it but auto-check it if json_serializable is picked in logic. -->
-                        <div class="checkbox-group" style="margin-top: 10px;">
-                            <label><input type="checkbox" id="use-json-annotation"> Add @JsonSerializable annotation (if not using json_serializable)</label>
-                        </div>
+
                     </div>
 
                     <div id="custom-options" class="section hidden">
